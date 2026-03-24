@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, TrendingUp, Award, Filter, Star, ShoppingCart, ShieldCheck, Truck, Users, Heart, Clock, Zap } from 'lucide-react';
+import { Search, TrendingUp, Award, Filter, Star, ShoppingCart, ShieldCheck, Truck, Users, Heart, Clock, Zap, Store } from 'lucide-react';
 import { Product } from '../types';
 import { getDatabase } from '../services/dbLayer';
 import { toggleWishlist as fbToggleWishlist, getWishlist, searchProducts } from '../services/firebaseAdapter';
@@ -8,9 +8,10 @@ import { toggleWishlist as fbToggleWishlist, getWishlist, searchProducts } from 
 interface MarketViewProps {
   products: Product[];
   addToCart: (p: Product) => void;
+  showToast?: (message: string, type?: 'success' | 'error') => void;
 }
 
-const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
+const MarketView: React.FC<MarketViewProps> = ({ products, addToCart, showToast }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [showMadeInGhana, setShowMadeInGhana] = useState(false);
@@ -81,8 +82,10 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
     const isNowInWishlist = fbToggleWishlist(productId);
     if (isNowInWishlist) {
       setWishlistIds(prev => [...prev, productId]);
+      showToast?.('Added to wishlist!');
     } else {
       setWishlistIds(prev => prev.filter(id => id !== productId));
+      showToast?.('Removed from wishlist');
     }
   };
 
@@ -98,30 +101,34 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
   return (
     <div className="bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-blue-600 text-white overflow-hidden relative">
+      <div className="bg-gradient-to-r from-green-800 to-green-700 text-white overflow-hidden relative">
+        {/* Adinkra-inspired top accent */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-amber-400 to-green-600"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 flex flex-col md:flex-row items-center justify-between relative z-10">
           <div className="md:w-1/2 space-y-6">
-            <div className="inline-flex items-center bg-blue-700 px-3 py-1 rounded-full text-sm font-medium">
+            <div className="inline-flex items-center bg-green-900 px-3 py-1 rounded-full text-sm font-medium">
               <TrendingUp className="w-4 h-4 mr-2" />
               Empowering Small Businesses in Ghana
             </div>
             <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
-              Traditional Markets, <span className="text-yellow-400">Digital Flow.</span>
+              Traditional Markets, <span className="text-amber-400">Digital Flow.</span>
             </h1>
-            <p className="text-xl text-blue-100 max-w-lg">
+            <p className="text-xl text-green-100 max-w-lg">
               Secure escrow payments, verified vendors, and flexible delivery modes designed specifically for your peace of mind.
             </p>
             <div className="flex flex-wrap gap-4 pt-4">
-              <button className="bg-white text-blue-600 px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-50 transition-colors">
+              <button onClick={() => {
+                document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
+              }} className="bg-white text-green-700 px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-amber-50 transition-colors">
                 Start Shopping
               </button>
-              <Link to="/affiliates" className="bg-blue-500 bg-opacity-30 border border-blue-400 text-white px-8 py-3 rounded-xl font-bold hover:bg-opacity-40 transition-colors">
+              <Link to="/affiliates" className="bg-green-600 bg-opacity-30 border border-green-400 text-white px-8 py-3 rounded-xl font-bold hover:bg-opacity-40 transition-colors">
                 Join Affiliates
               </Link>
             </div>
           </div>
           <div className="md:w-1/2 mt-12 md:mt-0 relative">
-             <div className="absolute inset-0 bg-blue-400 blur-3xl opacity-30 rounded-full"></div>
+             <div className="absolute inset-0 bg-green-400 blur-3xl opacity-30 rounded-full"></div>
              <img 
                src="https://picsum.photos/seed/market/600/400" 
                alt="Marketplace" 
@@ -131,22 +138,57 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
         </div>
       </div>
 
+      {/* Featured from Ghanaian Shops */}
+      {products.length > 0 && !searchTerm && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center gap-2 mb-6">
+            <Store className="w-5 h-5 text-green-700" />
+            <h2 className="text-xl font-bold text-gray-900">Featured from Ghanaian Shops</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {products.slice(0, 6).map(product => (
+              <Link 
+                key={product.id} 
+                to={`/product/${product.id}`}
+                className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-all group"
+              >
+                <div className="aspect-square overflow-hidden">
+                  <img 
+                    src={product.image} 
+                    alt={product.name} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-3">
+                  <p className="text-xs text-gray-500 line-clamp-1">{product.name}</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Store className="w-3 h-3 text-green-600" />
+                    <span className="text-[10px] text-green-700 font-medium">{product.vendorName}</span>
+                  </div>
+                  <p className="text-sm font-bold text-gray-900 mt-1">GH₵ {product.price.toLocaleString()}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Flash Deals Section */}
       {flashDeals.length > 0 && !searchTerm && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-3xl p-6 md:p-8 text-white">
+          <div className="bg-gradient-to-r from-green-700 to-green-800 rounded-3xl p-6 md:p-8 text-white">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-2 rounded-xl">
-                  <Zap className="w-6 h-6" />
+                <div className="bg-amber-500/20 p-2 rounded-xl">
+                  <Zap className="w-6 h-6 text-amber-400" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-extrabold">FLASH DEALS</h2>
-                  <p className="text-white/80 text-sm">Limited time offers!</p>
+                  <p className="text-green-100 text-sm">Limited time offers!</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-xl">
-                <Clock className="w-5 h-5" />
+              <div className="flex items-center gap-2 bg-amber-500/20 px-4 py-2 rounded-xl">
+                <Clock className="w-5 h-5 text-amber-400" />
                 <span className="font-bold">Ends Soon!</span>
               </div>
             </div>
@@ -163,7 +205,7 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
                       alt={deal.name} 
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                       -{Math.round((1 - deal.price / (deal.originalPrice || deal.price)) * 100)}%
                     </div>
                     <button
@@ -176,22 +218,22 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
                   <div className="p-4">
                     <p className="font-bold text-sm line-clamp-2 mb-2">{deal.name}</p>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg font-extrabold text-red-500">GH₵ {deal.price}</span>
+                      <span className="text-lg font-extrabold text-amber-600">GH₵ {deal.price}</span>
                       {deal.originalPrice && (
                         <span className="text-sm text-gray-400 line-through">GH₵ {deal.originalPrice}</span>
                       )}
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 bg-orange-100 px-2 py-1 rounded-lg">
-                        <Clock className="w-3 h-3 text-orange-600" />
-                        <span className="text-xs font-bold text-orange-600">{countdowns[deal.id] || '...'}</span>
+                      <div className="flex items-center gap-1 bg-amber-100 px-2 py-1 rounded-lg">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        <span className="text-xs font-bold text-amber-600">{countdowns[deal.id] || '...'}</span>
                       </div>
                       <button
                         onClick={(e) => {
                           e.preventDefault();
                           addToCart(deal);
                         }}
-                        className="bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition-colors"
+                        className="bg-green-600 text-white p-2 rounded-xl hover:bg-green-700 transition-colors"
                       >
                         <ShoppingCart className="w-4 h-4" />
                       </button>
@@ -207,13 +249,13 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Search & Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between" id="products-section">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input 
               type="text"
               placeholder="Search products, vendors, or categories..."
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -241,7 +283,7 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
               onClick={() => setActiveCategory(cat)}
               className={`px-6 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all ${
                 activeCategory === cat 
-                  ? 'bg-blue-600 text-white shadow-md' 
+                  ? 'bg-green-700 text-white shadow-md' 
                   : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-100'
               }`}
             >
@@ -255,25 +297,25 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
           <h2 className="text-2xl font-bold flex items-center gap-2">
             {searchTerm ? (
               <>
-                <Search className="text-blue-600" />
+                <Search className="text-green-700" />
                 Search Results for "{searchTerm}"
                 <span className="text-base font-normal text-gray-500">({displayProducts.length} products)</span>
               </>
             ) : activeCategory !== 'All' ? (
               <>
-                <TrendingUp className="text-blue-600" />
+                <TrendingUp className="text-green-700" />
                 {activeCategory}
                 <span className="text-base font-normal text-gray-500">({displayProducts.length} products)</span>
               </>
             ) : showMadeInGhana ? (
               <>
-                <Award className="text-green-600" />
+                <Award className="text-green-700" />
                 Made in Ghana Products
                 <span className="text-base font-normal text-gray-500">({displayProducts.length} products)</span>
               </>
             ) : (
               <>
-                <TrendingUp className="text-blue-600" />
+                <TrendingUp className="text-green-700" />
                 Discover Trending
                 <span className="text-base font-normal text-gray-500">({displayProducts.length} products)</span>
               </>
@@ -292,7 +334,7 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 {product.isMadeInGhana && (
-                  <div className="absolute top-4 left-4 bg-green-600 text-white text-[10px] uppercase font-bold px-2 py-1 rounded flex items-center gap-1 shadow-md">
+                  <div className="absolute top-4 left-4 bg-green-700 text-white text-[10px] uppercase font-bold px-2 py-1 rounded flex items-center gap-1 shadow-md">
                     <Award className="w-3 h-3" /> Made in Ghana
                   </div>
                 )}
@@ -308,21 +350,21 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
               </Link>
               <div className="p-5">
                 <div className="flex justify-between items-start mb-1">
-                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">{product.category}</p>
+                  <p className="text-xs font-semibold text-green-700 uppercase tracking-wider">{product.category}</p>
                 </div>
-                <Link to={`/product/${product.id}`} className="block text-lg font-bold text-gray-900 mb-2 hover:text-blue-600 line-clamp-1">
+                <Link to={`/product/${product.id}`} className="block text-lg font-bold text-gray-900 mb-2 hover:text-green-700 line-clamp-1">
                   {product.name}
                 </Link>
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-xl font-bold text-gray-900">GH₵ {product.price.toLocaleString()}</span>
                   <button 
                     onClick={() => addToCart(product)}
-                    className="bg-gray-100 text-gray-900 p-2 rounded-xl hover:bg-blue-600 hover:text-white transition-colors"
+                    className="bg-green-100 text-green-700 p-2 rounded-xl hover:bg-green-700 hover:text-white transition-colors"
                   >
                     <ShoppingCart className="w-5 h-5" />
                   </button>
                 </div>
-                <p className="mt-3 text-xs text-gray-500">By <span className="font-medium text-gray-700">{product.vendorName}</span></p>
+                <p className="mt-3 text-xs text-gray-500">By <span className="font-medium text-green-700">{product.vendorName}</span></p>
               </div>
             </div>
           ))}
@@ -344,8 +386,8 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
       <div className="bg-white border-y py-12 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="flex gap-4 items-start">
-            <div className="bg-blue-100 p-3 rounded-2xl">
-              <ShieldCheck className="w-6 h-6 text-blue-600" />
+            <div className="bg-green-100 p-3 rounded-2xl">
+              <ShieldCheck className="w-6 h-6 text-green-700" />
             </div>
             <div>
               <h4 className="font-bold text-lg">Escrow Protection</h4>
@@ -354,7 +396,7 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
           </div>
           <div className="flex gap-4 items-start">
             <div className="bg-green-100 p-3 rounded-2xl">
-              <Truck className="w-6 h-6 text-green-600" />
+              <Truck className="w-6 h-6 text-green-700" />
             </div>
             <div>
               <h4 className="font-bold text-lg">Flexible Delivery</h4>
@@ -362,8 +404,8 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
             </div>
           </div>
           <div className="flex gap-4 items-start">
-            <div className="bg-purple-100 p-3 rounded-2xl">
-              <Users className="w-6 h-6 text-purple-600" />
+            <div className="bg-green-100 p-3 rounded-2xl">
+              <Users className="w-6 h-6 text-green-700" />
             </div>
             <div>
               <h4 className="font-bold text-lg">Affiliate Network</h4>

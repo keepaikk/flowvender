@@ -15,6 +15,9 @@ export const CONFIG = {
   // Admin
   ADMIN_PASSWORD: import.meta.env.VITE_ADMIN_PASSWORD || 'admin123',
   
+  // Vendor
+  VENDOR_PASSWORD: import.meta.env.VITE_VENDOR_PASSWORD || 'vendor123',
+  
   // Gemini AI (optional)
   GEMINI_API_KEY: import.meta.env.VITE_GEMINI_API_KEY || '',
   

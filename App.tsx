@@ -40,6 +40,13 @@ const App: React.FC = () => {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [adminAuth, setAdminAuth] = useState(false);
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Show toast notification (auto-dismiss after 2s)
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 2000);
+  };
 
   React.useEffect(() => {
     // Load products from database
@@ -68,11 +75,6 @@ const App: React.FC = () => {
   }, [orders]);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user] = useState<UserProfile>({
-    name: 'Kwame Mensah',
-    email: 'kwame@example.com',
-    role: 'CUSTOMER'
-  });
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -82,6 +84,7 @@ const App: React.FC = () => {
       }
       return [...prev, { ...product, quantity: 1 }];
     });
+    showToast(`${product.name} added to cart!`);
   };
 
   const handleAdminLogin = () => {
@@ -116,10 +119,9 @@ const App: React.FC = () => {
 
               {/* Desktop Nav */}
               <div className="hidden md:flex items-center space-x-8">
-                <Link to="/" className="text-gray-600 hover:text-blue-600 font-medium">Marketplace</Link>
-                <Link to="/affiliates" className="text-gray-600 hover:text-blue-600 font-medium">Affiliate Program</Link>
-                <Link to="/admin" className="text-sm text-gray-600 hover:text-green-600 font-medium">Admin</Link>
-                <Link to="/vendor" className="text-gray-600 hover:text-blue-600 font-medium flex items-center gap-1">
+                <Link to="/" className="text-gray-600 hover:text-green-600 font-medium">Marketplace</Link>
+                <Link to="/affiliates" className="text-gray-600 hover:text-green-600 font-medium">Affiliate Program</Link>
+                <Link to="/vendor" className="text-gray-600 hover:text-green-600 font-medium flex items-center gap-1">
                    <Store className="w-4 h-4" /> Vendor Hub
                 </Link>
                 <div className="flex items-center space-x-4 border-l pl-8">
@@ -142,12 +144,6 @@ const App: React.FC = () => {
                       </span>
                     )}
                   </Link>
-                  <div className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-full border">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <span className="text-sm font-medium">{user.name}</span>
-                  </div>
                 </div>
               </div>
 
@@ -173,7 +169,7 @@ const App: React.FC = () => {
         {/* Content */}
         <main className="flex-grow">
           <Routes>
-            <Route path="/" element={<MarketView products={products} addToCart={addToCart} />} />
+            <Route path="/" element={<MarketView products={products} addToCart={addToCart} showToast={showToast} />} />
             <Route path="/product/:id" element={<ProductDetail products={products} addToCart={addToCart} />} />
             <Route path="/checkout" element={<Checkout cart={cart} removeFromCart={removeFromCart} clearCart={clearCart} setOrders={setOrders} />} />
             <Route path="/admin" element={adminAuth ? <AdminDashboard /> : (
@@ -201,12 +197,11 @@ const App: React.FC = () => {
           </Routes>
         </main>
 
-        {/* Footer */}
         <footer className="bg-gray-900 text-gray-300 py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <ShoppingBag className="text-blue-500 w-6 h-6" />
+                <ShoppingBag className="text-green-500 w-6 h-6" />
                 <span className="text-xl font-bold text-white">FLOW MARKET</span>
               </div>
               <p className="text-sm leading-relaxed">
@@ -214,7 +209,7 @@ const App: React.FC = () => {
               </p>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4 underline decoration-blue-500">Security & Trust</h4>
+              <h4 className="text-white font-semibold mb-4 underline decoration-green-500">Security &amp; Trust</h4>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-green-500" /> Escrow Payments</li>
                 <li className="flex items-center gap-2"><BadgeCheck className="w-4 h-4 text-green-500" /> Verified Vendors</li>
@@ -222,7 +217,7 @@ const App: React.FC = () => {
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4 underline decoration-blue-500">Delivery Options</h4>
+              <h4 className="text-white font-semibold mb-4 underline decoration-green-500">Delivery Options</h4>
               <ul className="space-y-2 text-sm">
                 <li>Reputable Courier Partners</li>
                 <li>Self-Pickup Locations</li>
@@ -230,7 +225,7 @@ const App: React.FC = () => {
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4 underline decoration-blue-500">Partner Program</h4>
+              <h4 className="text-white font-semibold mb-4 underline decoration-green-500">Partner Program</h4>
               <ul className="space-y-2 text-sm">
                 <li>Affiliate Training</li>
                 <li>Made in Ghana Showcase</li>
@@ -239,9 +234,25 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-gray-800 text-center text-xs">
-            &copy; 2024 Flow Vendor Markets. All rights reserved. Built for Ghana's Digital Future.
+            © 2026 FlowVender Ghana. All rights reserved. Built for Ghana's Digital Future.
           </div>
         </footer>
+
+        {/* Discreet Admin Footer */}
+        <footer className="bg-gray-950 text-gray-600 text-center py-3 text-xs">
+          <a href="#/admin" className="hover:text-gray-300 transition-colors">Admin</a>
+          <span className="mx-2">·</span>
+          <span>© 2026 FlowVender Ghana</span>
+        </footer>
+
+        {/* Toast Notification */}
+        {toast && (
+          <div className={`fixed bottom-6 right-6 z-50 px-6 py-3 rounded-xl shadow-lg text-white font-semibold transition-all ${
+            toast.type === 'success' ? 'bg-green-700' : 'bg-red-600'
+          }`}>
+            {toast.message}
+          </div>
+        )}
       </div>
     </Router>
   );

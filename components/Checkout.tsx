@@ -37,8 +37,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.PAYSTACK_FULL);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Customer details
-  const [customerName, setCustomerName] = useState('');
+  // Customer details - phone and address are required, name is optional
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -61,11 +60,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
   const total = subtotal + deliveryFee;
 
   const handlePlaceOrder = () => {
-    // Validate required fields
-    if (!customerName.trim()) {
-      alert('Please enter your name');
-      return;
-    }
+    // Validate required fields - only phone and address
     if (!customerPhone.trim()) {
       alert('Please enter your phone number');
       return;
@@ -87,7 +82,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
         deliveryMode,
         paymentMethod,
         timestamp: new Date().toISOString(),
-        customerName,
+        customerName: '',
         customerPhone,
         customerAddress,
         deliveryAddress: deliveryMode === DeliveryMode.SELF_PICKUP ? 'Self Pickup' : deliveryAddress,
@@ -124,10 +119,10 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
            <div className="flex items-center w-full max-w-lg">
              {[1,2,3].map(s => (
                <React.Fragment key={s}>
-                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step >= s ? 'bg-blue-600 text-white' : 'bg-white text-gray-400 border-2'}`}>
+                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step >= s ? 'bg-green-700 text-white' : 'bg-white text-gray-400 border-2'}`}>
                    {step > s ? <CheckCircle2 className="w-6 h-6" /> : s}
                  </div>
-                 {s < 3 && <div className={`flex-grow h-1 mx-2 ${step > s ? 'bg-blue-600' : 'bg-gray-200'}`} />}
+                 {s < 3 && <div className={`flex-grow h-1 mx-2 ${step > s ? 'bg-green-700' : 'bg-gray-200'}`} />}
                </React.Fragment>
              ))}
            </div>
@@ -139,20 +134,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
               {/* Customer Details */}
               <div className="bg-white rounded-3xl shadow-sm border p-8">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                   <User className="text-blue-600" /> Your Details
+                   <User className="text-green-700" /> Your Details
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Full Name *</label>
-                    <input
-                      type="text"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="e.g., Kwame Asante"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                      required
-                    />
-                  </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                       <Phone className="w-4 h-4" /> Phone Number * (for delivery)
@@ -162,29 +146,29 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
                       placeholder="e.g., 024 123 4567"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                       required
                     />
                   </div>
-                </div>
-                <div className="mt-4">
-                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                    <MapPin className="w-4 h-4" /> Additional Address Info (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={customerAddress}
-                    onChange={(e) => setCustomerAddress(e.target.value)}
-                    placeholder="Landmark, GPS, or additional notes"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                      <MapPin className="w-4 h-4" /> Additional Address Info (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={customerAddress}
+                      onChange={(e) => setCustomerAddress(e.target.value)}
+                      placeholder="Landmark, GPS, or additional notes"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Cart Items */}
               <div className="bg-white rounded-3xl shadow-sm border p-8">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                   <ShoppingCart className="text-blue-600" /> Review Your Items
+                   <ShoppingCart className="text-green-700" /> Review Your Items
                 </h2>
                 <div className="divide-y">
                   {cart.map(item => (
@@ -211,7 +195,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
               {/* Delivery Options */}
               <div className="bg-white rounded-3xl shadow-sm border p-8">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                   <Truck className="text-blue-600" /> Delivery Options
+                   <Truck className="text-green-700" /> Delivery Options
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {Object.values(DeliveryMode).map(mode => (
@@ -219,7 +203,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                       key={mode}
                       onClick={() => setDeliveryMode(mode)}
                       className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                        deliveryMode === mode ? 'border-blue-600 bg-blue-50' : 'border-gray-100 hover:border-gray-300'
+                        deliveryMode === mode ? 'border-green-700 bg-green-50' : 'border-gray-100 hover:border-gray-300'
                       }`}
                     >
                       <div className="font-bold text-sm mb-1">{mode}</div>
@@ -243,7 +227,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                       onChange={(e) => setDeliveryAddress(e.target.value)}
                       placeholder="Enter your full delivery address including city, street, and landmark"
                       rows={3}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none resize-none"
                       required
                     />
                   </div>
@@ -275,10 +259,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                   </div>
                   <button 
                     onClick={() => {
-                      if (!customerName.trim()) {
-                        alert('Please enter your name');
-                        return;
-                      }
                       if (!customerPhone.trim()) {
                         alert('Please enter your phone number');
                         return;
@@ -289,7 +269,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                       }
                       setStep(2);
                     }}
-                    className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-green-700 text-white py-4 rounded-2xl font-bold hover:bg-green-800 transition-all flex items-center justify-center gap-2"
                   >
                     Proceed to Payment <ArrowRight className="w-5 h-5" />
                   </button>
