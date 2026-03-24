@@ -1,5 +1,6 @@
 import { DatabaseAdapter } from './dbLayer';
 import { Product, Order } from '../types';
+import { log } from './config';
 
 // ─── Seed Data: 50+ authentic Ghanaian products ────────────────────────────
 
@@ -693,7 +694,7 @@ export const saveOrders = (orders: Order[]) => {
 export const getFirebaseAdapter = (): DatabaseAdapter => {
   return {
     getProducts: async () => {
-      console.log('[FlowVender] Loading products from local seed data');
+      log('Loading products from local seed data');
       return PRODUCTS;
     },
 
@@ -705,7 +706,7 @@ export const getFirebaseAdapter = (): DatabaseAdapter => {
       const orders = getSavedOrders();
       orders.unshift(order);
       saveOrders(orders);
-      console.log('[FlowVender] Order saved:', order.id);
+      log('Order saved:', order.id);
     },
 
     searchProducts: async (query: string): Promise<Product[]> => {
@@ -737,4 +738,25 @@ export const getFirebaseAdapter = (): DatabaseAdapter => {
 
     toggleWishlist,
   };
+};
+
+// ─── Standalone query helpers (for use directly in components) ────────────────
+
+export const getFlashDeals = async (): Promise<Product[]> => {
+  return (await getFirebaseAdapter().getProducts()).filter(p => !!(p as any).isFlashDeal);
+};
+
+export const getMadeInGhanaProducts = async (): Promise<Product[]> => {
+  return (await getFirebaseAdapter().getProducts()).filter(p => p.isMadeInGhana);
+};
+
+export const searchProducts = async (query: string): Promise<Product[]> => {
+  const q = query.toLowerCase();
+  const all = await getFirebaseAdapter().getProducts();
+  return all.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    p.description.toLowerCase().includes(q) ||
+    p.category.toLowerCase().includes(q) ||
+    p.vendorName.toLowerCase().includes(q)
+  );
 };

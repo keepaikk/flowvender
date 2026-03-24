@@ -1,4 +1,5 @@
 import { Order } from '../types';
+import { CONFIG } from './config';
 
 // Opens WhatsApp with pre-filled order notification message
 export const sendOrderViaWhatsApp = (order: Order): void => {
@@ -17,5 +18,5 @@ export const sendOrderViaWhatsApp = (order: Order): void => {
 💳 Payment: ${order.paymentMethod}
 📅 Time: ${new Date(order.timestamp).toLocaleString('en-GH')}`
   );
-  window.open(`https://wa.me/233000000000?text=${msg}`, '_blank');
+  window.open(`https://wa.me/${CONFIG.VENDOR_WHATSAPP}?text=${msg}`, '_blank');
 };

@@ -1,9 +1,12 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Only initialize Gemini if API key is available (server-side or env-var)
+const API_KEY = typeof process !== 'undefined' ? (process.env?.API_KEY || 'DEMO_KEY') : 'DEMO_KEY';
+const ai = API_KEY !== 'DEMO_KEY' ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
 export async function generateProductDescription(productName: string, features: string[]) {
+  if (!ai) return `Premium quality ${productName} - ${features.join(', ')}. Order now on FlowVender!`;
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -21,8 +24,7 @@ export async function generateProductDescription(productName: string, features: 
 }
 
 export async function getRecommendedProducts(category: string) {
-    // This would typically involve sending user history/context to Gemini
-    // For MVP, we return a structured prompt-based suggestion logic
+  if (!ai) return "Check our latest arrivals!";
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',

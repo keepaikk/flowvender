@@ -27,15 +27,19 @@ import Checkout from './components/Checkout';
 import VendorDashboard from './components/VendorDashboard';
 import AffiliateLanding from './components/AffiliateLanding';
 import UserOrders from './components/UserOrders';
+import AdminDashboard from './components/AdminDashboard';
 
 import { getDatabase } from './services/dbLayer';
 import { getSavedCart, saveCart, getSavedOrders, saveOrders, getWishlist } from './services/firebaseAdapter';
+import { CONFIG } from './services/config';
 
 const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [adminAuth, setAdminAuth] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
 
   React.useEffect(() => {
     // Load products from database
@@ -80,6 +84,14 @@ const App: React.FC = () => {
     });
   };
 
+  const handleAdminLogin = () => {
+    if (adminPasswordInput === 'admin123' || adminPasswordInput === CONFIG.ADMIN_PASSWORD) {
+      setAdminAuth(true);
+    } else {
+      alert('Incorrect password');
+    }
+  };
+
   const removeFromCart = (id: string) => {
     setCart(prev => prev.filter(item => item.id !== id));
   };
@@ -106,6 +118,7 @@ const App: React.FC = () => {
               <div className="hidden md:flex items-center space-x-8">
                 <Link to="/" className="text-gray-600 hover:text-blue-600 font-medium">Marketplace</Link>
                 <Link to="/affiliates" className="text-gray-600 hover:text-blue-600 font-medium">Affiliate Program</Link>
+                <Link to="/admin" className="text-sm text-gray-600 hover:text-green-600 font-medium">Admin</Link>
                 <Link to="/vendor" className="text-gray-600 hover:text-blue-600 font-medium flex items-center gap-1">
                    <Store className="w-4 h-4" /> Vendor Hub
                 </Link>
@@ -163,6 +176,25 @@ const App: React.FC = () => {
             <Route path="/" element={<MarketView products={products} addToCart={addToCart} />} />
             <Route path="/product/:id" element={<ProductDetail products={products} addToCart={addToCart} />} />
             <Route path="/checkout" element={<Checkout cart={cart} removeFromCart={removeFromCart} clearCart={clearCart} setOrders={setOrders} />} />
+            <Route path="/admin" element={adminAuth ? <AdminDashboard /> : (
+              <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <div className="bg-white p-8 rounded-xl shadow-lg max-w-sm w-full">
+                  <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+                  <input
+                    type="password"
+                    placeholder="Enter admin password"
+                    value={adminPasswordInput}
+                    onChange={e => setAdminPasswordInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
+                    className="w-full border px-4 py-3 rounded-lg mb-4"
+                  />
+                  <button onClick={handleAdminLogin} className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700">
+                    Login
+                  </button>
+                  <p className="text-xs text-gray-400 text-center mt-4">Default password: admin123</p>
+                </div>
+              </div>
+            )} />
             <Route path="/vendor" element={<VendorDashboard />} />
             <Route path="/affiliates" element={<AffiliateLanding />} />
             <Route path="/orders" element={<UserOrders orders={orders} setOrders={setOrders} />} />

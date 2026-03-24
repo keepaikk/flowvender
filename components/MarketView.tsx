@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, TrendingUp, Award, Filter, Star, ShoppingCart, ShieldCheck, Truck, Users, Heart, Clock, Zap } from 'lucide-react';
 import { Product } from '../types';
-import { getDatabase, toggleWishlist as fbToggleWishlist, getWishlist, searchProducts } from '../services/firebaseAdapter';
+import { getDatabase } from '../services/dbLayer';
+import { toggleWishlist as fbToggleWishlist, getWishlist, searchProducts } from '../services/firebaseAdapter';
 
 interface MarketViewProps {
   products: Product[];
