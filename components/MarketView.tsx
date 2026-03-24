@@ -1,9 +1,8 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-// Fix: Added missing ShoppingCart, ShieldCheck, Truck, and Users imports
-import { Search, TrendingUp, Award, Filter, Star, ShoppingCart, ShieldCheck, Truck, Users } from 'lucide-react';
+import { Search, TrendingUp, Award, Filter, Star, ShoppingCart, ShieldCheck, Truck, Users, Heart, Clock, Zap } from 'lucide-react';
 import { Product } from '../types';
+import { getDatabase, toggleWishlist as fbToggleWishlist, getWishlist, searchProducts } from '../services/firebaseAdapter';
 
 interface MarketViewProps {
   products: Product[];
@@ -13,14 +12,87 @@ interface MarketViewProps {
 const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [showMadeInGhana, setShowMadeInGhana] = useState(false);
+  const [flashDeals, setFlashDeals] = useState<Product[]>([]);
+  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
+  const [countdowns, setCountdowns] = useState<Record<string, string>>({});
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
-  const categories = ['All', 'Fashion', 'Beauty', 'Electronics', 'Home'];
+  // All categories from products
+  const allCategories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
 
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  useEffect(() => {
+    // Load flash deals
+    getDatabase().getFlashDeals().then(deals => {
+      setFlashDeals(deals);
+    });
+    
+    // Load wishlist
+    setWishlistIds(getWishlist());
+  }, []);
+
+  // Countdown timer for flash deals
+  useEffect(() => {
+    const updateCountdowns = () => {
+      const newCountdowns: Record<string, string> = {};
+      flashDeals.forEach(deal => {
+        if (deal.dealEndsAt) {
+          const end = new Date(deal.dealEndsAt).getTime();
+          const now = Date.now();
+          const diff = end - now;
+          
+          if (diff <= 0) {
+            newCountdowns[deal.id] = 'EXPIRED';
+          } else {
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            newCountdowns[deal.id] = `${hours}h ${minutes}m ${seconds}s`;
+          }
+        }
+      });
+      setCountdowns(newCountdowns);
+    };
+
+    updateCountdowns();
+    const interval = setInterval(updateCountdowns, 1000);
+    return () => clearInterval(interval);
+  }, [flashDeals]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    const doSearch = async () => {
+      if (searchTerm.trim()) {
+        const results = await searchProducts(searchTerm);
+        setFilteredProducts(results);
+      } else {
+        setFilteredProducts([]);
+      }
+    };
+    
+    const timeout = setTimeout(doSearch, 300);
+    return () => clearTimeout(timeout);
+  }, [searchTerm]);
+
+  const handleToggleWishlist = (productId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const isNowInWishlist = fbToggleWishlist(productId);
+    if (isNowInWishlist) {
+      setWishlistIds(prev => [...prev, productId]);
+    } else {
+      setWishlistIds(prev => prev.filter(id => id !== productId));
+    }
+  };
+
+  // Filter products based on category and Made in Ghana toggle
+  const displayProducts = searchTerm.trim() 
+    ? filteredProducts 
+    : products.filter(p => {
+        const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
+        const matchesMadeInGhana = !showMadeInGhana || p.isMadeInGhana;
+        return matchesCategory && matchesMadeInGhana;
+      });
 
   return (
     <div className="bg-gray-50">
@@ -58,47 +130,159 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
         </div>
       </div>
 
+      {/* Flash Deals Section */}
+      {flashDeals.length > 0 && !searchTerm && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-3xl p-6 md:p-8 text-white">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-xl">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-extrabold">FLASH DEALS</h2>
+                  <p className="text-white/80 text-sm">Limited time offers!</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-xl">
+                <Clock className="w-5 h-5" />
+                <span className="font-bold">Ends Soon!</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {flashDeals.map(deal => (
+                <Link 
+                  key={deal.id} 
+                  to={`/product/${deal.id}`}
+                  className="bg-white rounded-2xl overflow-hidden text-gray-900 hover:shadow-lg transition-all"
+                >
+                  <div className="relative aspect-square">
+                    <img 
+                      src={deal.image} 
+                      alt={deal.name} 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      -{Math.round((1 - deal.price / (deal.originalPrice || deal.price)) * 100)}%
+                    </div>
+                    <button
+                      onClick={(e) => handleToggleWishlist(deal.id, e)}
+                      className="absolute top-2 right-2 bg-white/90 p-2 rounded-full hover:bg-white transition-colors"
+                    >
+                      <Heart className={`w-5 h-5 ${wishlistIds.includes(deal.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+                    </button>
+                  </div>
+                  <div className="p-4">
+                    <p className="font-bold text-sm line-clamp-2 mb-2">{deal.name}</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg font-extrabold text-red-500">GH₵ {deal.price}</span>
+                      {deal.originalPrice && (
+                        <span className="text-sm text-gray-400 line-through">GH₵ {deal.originalPrice}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 bg-orange-100 px-2 py-1 rounded-lg">
+                        <Clock className="w-3 h-3 text-orange-600" />
+                        <span className="text-xs font-bold text-orange-600">{countdowns[deal.id] || '...'}</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          addToCart(deal);
+                        }}
+                        className="bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition-colors"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Search & Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-12 items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input 
               type="text"
-              placeholder="Search products or vendors..."
+              placeholder="Search products, vendors, or categories..."
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-6 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all ${
-                  activeCategory === cat 
-                    ? 'bg-blue-600 text-white shadow-md' 
-                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-100'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setShowMadeInGhana(!showMadeInGhana)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                showMadeInGhana 
+                  ? 'bg-green-600 text-white shadow-md' 
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-100'
+              }`}
+            >
+              <Award className="w-4 h-4" />
+              Made in Ghana
+            </button>
           </div>
         </div>
 
-        {/* Featured Section */}
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <TrendingUp className="text-blue-600" /> Discover Trending
-          </h2>
-          <Link to="/" className="text-blue-600 font-medium hover:underline">View All</Link>
+        {/* Category Chips */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-hide">
+          {allCategories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-6 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all ${
+                activeCategory === cat 
+                  ? 'bg-blue-600 text-white shadow-md' 
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-100'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
 
+        {/* Results Info */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            {searchTerm ? (
+              <>
+                <Search className="text-blue-600" />
+                Search Results for "{searchTerm}"
+                <span className="text-base font-normal text-gray-500">({displayProducts.length} products)</span>
+              </>
+            ) : activeCategory !== 'All' ? (
+              <>
+                <TrendingUp className="text-blue-600" />
+                {activeCategory}
+                <span className="text-base font-normal text-gray-500">({displayProducts.length} products)</span>
+              </>
+            ) : showMadeInGhana ? (
+              <>
+                <Award className="text-green-600" />
+                Made in Ghana Products
+                <span className="text-base font-normal text-gray-500">({displayProducts.length} products)</span>
+              </>
+            ) : (
+              <>
+                <TrendingUp className="text-blue-600" />
+                Discover Trending
+                <span className="text-base font-normal text-gray-500">({displayProducts.length} products)</span>
+              </>
+            )}
+          </h2>
+        </div>
+
+        {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {filteredProducts.map(product => (
+          {displayProducts.map(product => (
             <div key={product.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100">
               <Link to={`/product/${product.id}`} className="block relative aspect-square overflow-hidden">
                 <img 
@@ -111,7 +295,13 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
                     <Award className="w-3 h-3" /> Made in Ghana
                   </div>
                 )}
-                <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                <button
+                  onClick={(e) => handleToggleWishlist(product.id, e)}
+                  className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors shadow-md"
+                >
+                  <Heart className={`w-5 h-5 ${wishlistIds.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+                </button>
+                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> {product.rating}
                 </div>
               </Link>
@@ -138,7 +328,7 @@ const MarketView: React.FC<MarketViewProps> = ({ products, addToCart }) => {
         </div>
 
         {/* Empty State */}
-        {filteredProducts.length === 0 && (
+        {displayProducts.length === 0 && (
           <div className="py-20 text-center">
             <div className="bg-gray-100 inline-block p-6 rounded-full mb-4">
               <Search className="w-12 h-12 text-gray-400" />

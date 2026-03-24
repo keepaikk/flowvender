@@ -1,7 +1,5 @@
-
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-// Fix: Added missing ShoppingCart and Package imports
 import { 
   Trash2, 
   CreditCard, 
@@ -13,7 +11,9 @@ import {
   ShieldCheck,
   AlertCircle,
   ShoppingCart,
-  Package
+  Package,
+  Phone,
+  MessageCircle
 } from 'lucide-react';
 import { CartItem, DeliveryMode, PaymentMethod, Order } from '../types';
 
@@ -24,6 +24,12 @@ interface CheckoutProps {
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
 }
 
+const MoMoNumbers: Record<string, string> = {
+  [PaymentMethod.MTN_MOBILE_MONEY]: '050 123 4567',
+  [PaymentMethod.VODAFONE_CASH]: '050 987 6543',
+  [PaymentMethod.AIRTELTIGO_MONEY]: '027 111 2222',
+};
+
 const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, setOrders }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -31,22 +37,60 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.PAYSTACK_FULL);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Customer details
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+
+  // Generate real order ID: FVM-YYYYMMDD-XXXX
+  const generateOrderId = (): string => {
+    const now = new Date();
+    const dateStr = now.getFullYear().toString() + 
+      String(now.getMonth() + 1).padStart(2, '0') + 
+      String(now.getDate()).padStart(2, '0');
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return `FVM-${dateStr}-${random}`;
+  };
+
+  // Check if Mobile Money is selected
+  const isMobileMoney = [PaymentMethod.MTN_MOBILE_MONEY, PaymentMethod.VODAFONE_CASH, PaymentMethod.AIRTELTIGO_MONEY].includes(paymentMethod);
+
   const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
   const deliveryFee = deliveryMode === DeliveryMode.SELF_PICKUP ? 0 : 25;
   const total = subtotal + deliveryFee;
 
   const handlePlaceOrder = () => {
+    // Validate required fields
+    if (!customerName.trim()) {
+      alert('Please enter your name');
+      return;
+    }
+    if (!customerPhone.trim()) {
+      alert('Please enter your phone number');
+      return;
+    }
+    if (deliveryMode !== DeliveryMode.SELF_PICKUP && !deliveryAddress.trim()) {
+      alert('Please enter your delivery address');
+      return;
+    }
+
     setIsProcessing(true);
-    // Simulate Paystack processing
+    
+    // Simulate processing delay
     setTimeout(() => {
       const newOrder: Order = {
-        id: Math.random().toString(36).substr(2, 9).toUpperCase(),
+        id: generateOrderId(),
         items: [...cart],
         totalAmount: total,
         status: 'PENDING',
         deliveryMode,
         paymentMethod,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        customerName,
+        customerPhone,
+        customerAddress,
+        deliveryAddress: deliveryMode === DeliveryMode.SELF_PICKUP ? 'Self Pickup' : deliveryAddress,
       };
       setOrders(prev => [newOrder, ...prev]);
       setIsProcessing(false);
@@ -92,6 +136,52 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
         {step === 1 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-8">
+              {/* Customer Details */}
+              <div className="bg-white rounded-3xl shadow-sm border p-8">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                   <User className="text-blue-600" /> Your Details
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Full Name *</label>
+                    <input
+                      type="text"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="e.g., Kwame Asante"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                      <Phone className="w-4 h-4" /> Phone Number * (for delivery)
+                    </label>
+                    <input
+                      type="tel"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      placeholder="e.g., 024 123 4567"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" /> Additional Address Info (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    placeholder="Landmark, GPS, or additional notes"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Cart Items */}
               <div className="bg-white rounded-3xl shadow-sm border p-8">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                    <ShoppingCart className="text-blue-600" /> Review Your Items
@@ -118,6 +208,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                 </div>
               </div>
 
+              {/* Delivery Options */}
               <div className="bg-white rounded-3xl shadow-sm border p-8">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                    <Truck className="text-blue-600" /> Delivery Options
@@ -140,6 +231,23 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                     </button>
                   ))}
                 </div>
+                
+                {/* Delivery Address (if not self pickup) */}
+                {deliveryMode !== DeliveryMode.SELF_PICKUP && (
+                  <div className="mt-6">
+                    <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                      <MapPin className="w-4 h-4" /> Delivery Address *
+                    </label>
+                    <textarea
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      placeholder="Enter your full delivery address including city, street, and landmark"
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                      required
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -166,7 +274,21 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                     <ShieldCheck className="w-4 h-4" /> Escrow payment enabled. Funds held until delivery.
                   </div>
                   <button 
-                    onClick={() => setStep(2)}
+                    onClick={() => {
+                      if (!customerName.trim()) {
+                        alert('Please enter your name');
+                        return;
+                      }
+                      if (!customerPhone.trim()) {
+                        alert('Please enter your phone number');
+                        return;
+                      }
+                      if (deliveryMode !== DeliveryMode.SELF_PICKUP && !deliveryAddress.trim()) {
+                        alert('Please enter your delivery address');
+                        return;
+                      }
+                      setStep(2);
+                    }}
                     className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
                   >
                     Proceed to Payment <ArrowRight className="w-5 h-5" />
@@ -181,7 +303,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-3xl shadow-sm border p-8">
               <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
-                <CreditCard className="text-blue-600" /> Secure Payment
+                <CreditCard className="text-blue-600" /> Payment Method
               </h2>
 
               <div className="space-y-6">
@@ -201,7 +323,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                             <p className="text-xs text-gray-500">
                               {method === PaymentMethod.PAYSTACK_FULL 
                                 ? "Pay the full amount upfront into escrow." 
-                                : "Pay 50% now and 50% upon delivery confirmation."}
+                                : method === PaymentMethod.PAYSTACK_PARTIAL
+                                ? "Pay 50% now and 50% upon delivery confirmation."
+                                : "Pay directly via Mobile Money. Funds held in escrow until delivery."}
                             </p>
                          </div>
                          {paymentMethod === method && <CheckCircle2 className="text-blue-600 w-6 h-6" />}
@@ -210,6 +334,25 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                    </div>
                  </div>
 
+                 {/* Mobile Money Payment Info */}
+                 {isMobileMoney && (
+                   <div className="bg-green-50 border border-green-200 rounded-2xl p-6">
+                     <div className="flex items-center gap-3 mb-4">
+                       <MessageCircle className="w-6 h-6 text-green-600" />
+                       <h3 className="font-bold text-green-800">Mobile Money Payment</h3>
+                     </div>
+                     <p className="text-sm text-green-700 mb-4">
+                       After placing your order, you will receive the MoMo number to send payment to. 
+                       Your funds will be held in escrow until you confirm delivery.
+                     </p>
+                     <div className="bg-white rounded-xl p-4 text-center">
+                       <p className="text-xs text-gray-500 mb-1">Send to:</p>
+                       <p className="text-2xl font-bold text-green-600">{MoMoNumbers[paymentMethod]}</p>
+                       <p className="text-xs text-gray-500 mt-1">Account Name: FlowVender Markets</p>
+                     </div>
+                   </div>
+                 )}
+
                  <div className="bg-blue-600 text-white p-6 rounded-2xl flex items-center gap-4">
                     <div className="p-3 bg-white/20 rounded-xl">
                       <CreditCard className="w-8 h-8" />
@@ -217,7 +360,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                     <div>
                       <p className="text-sm opacity-80">Total due now</p>
                       <p className="text-3xl font-bold">
-                        GH₵ {(paymentMethod === PaymentMethod.PAYSTACK_FULL ? total : total / 2).toLocaleString()}
+                        GH₵ {(paymentMethod === PaymentMethod.PAYSTACK_FULL || isMobileMoney ? total : total / 2).toLocaleString()}
                       </p>
                     </div>
                  </div>
@@ -239,7 +382,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                   {isProcessing ? (
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400"></div>
                   ) : (
-                    <>Pay with Paystack <ArrowRight className="w-6 h-6" /></>
+                    <>Place Order <ArrowRight className="w-6 h-6" /></>
                   )}
                 </button>
                 <button 
@@ -259,9 +402,32 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, removeFromCart, clearCart, se
                <CheckCircle2 className="w-16 h-16 text-green-600" />
              </div>
              <h2 className="text-3xl font-bold mb-4">Order Placed Successfully!</h2>
-             <p className="text-gray-600 mb-12">
-               Your payment is now held in escrow. You'll receive real-time updates as the vendor prepares and ships your order.
+             <p className="text-gray-600 mb-6">
+               {isMobileMoney ? (
+                 <>
+                   Your order has been received. <strong>Please send GH₵ {total.toLocaleString()} to {MoMoNumbers[paymentMethod]}</strong> and confirm payment via WhatsApp or the confirmation link sent to your phone.
+                 </>
+               ) : (
+                 <>
+                   Your payment is now held in escrow. You'll receive real-time updates as the vendor prepares and ships your order.
+                 </>
+               )}
              </p>
+             
+             {isMobileMoney && (
+               <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-8">
+                 <h3 className="font-bold text-green-800 mb-4">MoMo Payment Details</h3>
+                 <div className="space-y-2">
+                   <p className="text-sm text-gray-600">Send to Number:</p>
+                   <p className="text-2xl font-bold text-green-600">{MoMoNumbers[paymentMethod]}</p>
+                   <p className="text-sm text-gray-600">Account Name:</p>
+                   <p className="font-bold">FlowVender Markets</p>
+                   <p className="text-sm text-gray-600">Amount:</p>
+                   <p className="text-xl font-bold">GH₵ {total.toLocaleString()}</p>
+                 </div>
+               </div>
+             )}
+
              <div className="space-y-4">
                <button 
                  onClick={() => navigate('/orders')}

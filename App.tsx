@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { 
   ShoppingBag, 
@@ -30,15 +29,40 @@ import AffiliateLanding from './components/AffiliateLanding';
 import UserOrders from './components/UserOrders';
 
 import { getDatabase } from './services/dbLayer';
+import { getSavedCart, saveCart, getSavedOrders, saveOrders, getWishlist } from './services/firebaseAdapter';
 
 const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [wishlistCount, setWishlistCount] = useState(0);
 
   React.useEffect(() => {
+    // Load products from database
     getDatabase().getProducts().then(setProducts);
+    
+    // Load cart from localStorage on startup
+    const savedCart = getSavedCart();
+    setCart(savedCart);
+    
+    // Load orders from localStorage on startup
+    const savedOrders = getSavedOrders();
+    setOrders(savedOrders);
+    
+    // Load wishlist count
+    setWishlistCount(getWishlist().length);
   }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    saveCart(cart);
+  }, [cart]);
+
+  // Save orders to localStorage whenever they change
+  useEffect(() => {
+    saveOrders(orders);
+  }, [orders]);
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user] = useState<UserProfile>({
     name: 'Kwame Mensah',
@@ -86,6 +110,14 @@ const App: React.FC = () => {
                    <Store className="w-4 h-4" /> Vendor Hub
                 </Link>
                 <div className="flex items-center space-x-4 border-l pl-8">
+                  {wishlistCount > 0 && (
+                    <Link to="/wishlist" className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full">
+                      <Heart className="w-6 h-6" />
+                      <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {wishlistCount}
+                      </span>
+                    </Link>
+                  )}
                   <Link to="/orders" className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full">
                     <History className="w-6 h-6" />
                   </Link>
