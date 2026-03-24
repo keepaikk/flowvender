@@ -1,0 +1,6 @@
+
+{
+  "name": "Flow Vendor Markets",
+  "description": "A comprehensive e-commerce MVP designed for the Ghanaian market, featuring secure escrow payments, affiliate marketing programs, and multi-mode delivery systems to bridge the gap between small vendors and global customers.",
+  "requestFramePermissions": ["camera", "microphone"]
+}

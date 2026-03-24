@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="40" fill="#2563eb" />
+  <path d="M50 90 L150 90 L135 160 L65 160 Z" fill="white" />
+  <path d="M75 90 Q100 40 125 90" fill="none" stroke="white" stroke-width="12" stroke-linecap="round" />
+  <text x="100" y="135" font-family="Arial, sans-serif" font-weight="bold" font-size="28" fill="#2563eb" text-anchor="middle" letter-spacing="2">FLOW</text>
+</svg>
