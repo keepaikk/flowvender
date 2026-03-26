@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   BookOpen, 
@@ -9,10 +9,48 @@ import {
   Award, 
   Video, 
   MessageSquare,
-  ShieldAlert
+  ShieldAlert,
+  Copy,
+  Check
 } from 'lucide-react';
 
 const AffiliateLanding: React.FC = () => {
+  const [referralId, setReferralId] = useState<string>('');
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    // Capture referral ID from URL or generate a unique one
+    const params = new URLSearchParams(window.location.search);
+    const refParam = params.get('ref');
+    
+    if (refParam) {
+      setReferralId(refParam);
+    } else {
+      // Generate a unique affiliate ID for this session
+      const generatedId = 'AFF' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      setReferralId(generatedId);
+    }
+  }, []);
+
+  const shareLink = `${window.location.origin}/?ref=${referralId}`;
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+      const textArea = document.createElement('textarea');
+      textArea.value = shareLink;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
   return (
     <div className="bg-white">
       {/* Hero */}
@@ -110,6 +148,39 @@ const AffiliateLanding: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Share Your Link Section */}
+      {referralId && (
+        <section className="py-16 bg-green-50">
+          <div className="max-w-3xl mx-auto px-4 text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Your Affiliate Link</h3>
+            <p className="text-gray-600 mb-6">Share this link to earn commissions when others sign up!</p>
+            <div className="bg-white p-4 rounded-2xl shadow-lg flex items-center gap-3">
+              <input 
+                type="text" 
+                readOnly 
+                value={shareLink}
+                className="flex-1 bg-gray-100 px-4 py-3 rounded-xl text-gray-700 font-mono text-sm"
+              />
+              <button 
+                onClick={copyToClipboard}
+                className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+                  copied 
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+              >
+                {copied ? (
+                  <><Check className="w-4 h-4" /> Copied!</>
+                ) : (
+                  <><Copy className="w-4 h-4" /> Copy Link</>
+                )}
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mt-4">Your Affiliate ID: <span className="font-mono font-bold text-green-600">{referralId}</span></p>
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="py-24 text-center">

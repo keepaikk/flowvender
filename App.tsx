@@ -28,6 +28,9 @@ import VendorDashboard from './components/VendorDashboard';
 import AffiliateLanding from './components/AffiliateLanding';
 import UserOrders from './components/UserOrders';
 import AdminDashboard from './components/AdminDashboard';
+import About from './components/About';
+import Blog from './components/Blog';
+import BlogPost from './components/BlogPost';
 
 import { getDatabase } from './services/dbLayer';
 import { getSavedCart, saveCart, getSavedOrders, saveOrders, getWishlist } from './services/firebaseAdapter';
@@ -120,6 +123,7 @@ const App: React.FC = () => {
               {/* Desktop Nav */}
               <div className="hidden md:flex items-center space-x-8">
                 <Link to="/" className="text-gray-600 hover:text-green-600 font-medium">Marketplace</Link>
+                <Link to="/about" className="text-gray-600 hover:text-green-600 font-medium">About</Link>
                 <Link to="/affiliates" className="text-gray-600 hover:text-green-600 font-medium">Affiliate Program</Link>
                 <Link to="/vendor" className="text-gray-600 hover:text-green-600 font-medium flex items-center gap-1">
                    <Store className="w-4 h-4" /> Vendor Hub
@@ -158,6 +162,8 @@ const App: React.FC = () => {
           {isMenuOpen && (
             <div className="md:hidden bg-white border-t px-4 py-4 space-y-4">
               <Link to="/" className="block text-lg font-medium" onClick={() => setIsMenuOpen(false)}>Marketplace</Link>
+              <Link to="/about" className="block text-lg font-medium" onClick={() => setIsMenuOpen(false)}>About</Link>
+              <Link to="/blog" className="block text-lg font-medium" onClick={() => setIsMenuOpen(false)}>Blog</Link>
               <Link to="/affiliates" className="block text-lg font-medium" onClick={() => setIsMenuOpen(false)}>Affiliate Program</Link>
               <Link to="/vendor" className="block text-lg font-medium" onClick={() => setIsMenuOpen(false)}>Vendor Hub</Link>
               <Link to="/orders" className="block text-lg font-medium" onClick={() => setIsMenuOpen(false)}>My Orders</Link>
@@ -194,6 +200,9 @@ const App: React.FC = () => {
             <Route path="/vendor" element={<VendorDashboard />} />
             <Route path="/affiliates" element={<AffiliateLanding />} />
             <Route path="/orders" element={<UserOrders orders={orders} setOrders={setOrders} />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:id" element={<BlogPost />} />
           </Routes>
         </main>
 
