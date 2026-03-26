@@ -18,7 +18,8 @@ import {
   Award,
   BadgeCheck,
   Package,
-  History
+  History,
+  LogOut
 } from 'lucide-react';
 import { Product, CartItem, Order, DeliveryMode, PaymentMethod, UserProfile } from './types';
 import MarketView from './components/MarketView';
@@ -31,9 +32,13 @@ import AdminDashboard from './components/AdminDashboard';
 import About from './components/About';
 import Blog from './components/Blog';
 import BlogPost from './components/BlogPost';
+import Login from './components/Login';
+import Register from './components/Register';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import { getDatabase } from './services/dbLayer';
 import { getSavedCart, saveCart, getSavedOrders, saveOrders, getWishlist } from './services/firebaseAdapter';
+import { useAuth } from './services/useAuth';
 import { CONFIG } from './services/config';
 
 const App: React.FC = () => {
@@ -77,6 +82,7 @@ const App: React.FC = () => {
     saveOrders(orders);
   }, [orders]);
 
+  const { isAuthenticated, isLoading: authLoading, currentUser, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const addToCart = (product: Product) => {
@@ -88,6 +94,11 @@ const App: React.FC = () => {
       return [...prev, { ...product, quantity: 1 }];
     });
     showToast(`${product.name} added to cart!`);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    showToast('Logged out successfully');
   };
 
   const handleAdminLogin = () => {
@@ -148,6 +159,28 @@ const App: React.FC = () => {
                       </span>
                     )}
                   </Link>
+                  {isAuthenticated ? (
+                    <div className="flex items-center space-x-3 border-l pl-4">
+                      <span className="text-sm text-gray-600">
+                        {currentUser?.name || currentUser?.email}
+                      </span>
+                      <button
+                        onClick={handleLogout}
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-full"
+                        title="Logout"
+                      >
+                        <LogOut className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <Link
+                      to="/login"
+                      className="flex items-center space-x-1 border-l pl-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>Login</span>
+                    </Link>
+                  )}
                 </div>
               </div>
 
@@ -197,7 +230,13 @@ const App: React.FC = () => {
                 </div>
               </div>
             )} />
-            <Route path="/vendor" element={<VendorDashboard />} />
+            <Route path="/vendor" element={
+              <ProtectedRoute requiredRoles={['vendor', 'admin']}>
+                <VendorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/affiliates" element={<AffiliateLanding />} />
             <Route path="/orders" element={<UserOrders orders={orders} setOrders={setOrders} />} />
             <Route path="/about" element={<About />} />
